@@ -575,12 +575,12 @@ private:
     SaturationFunctionFamily getSaturationFunctionFamily(Opm::EclipseStateConstPtr eclState) const
     {
         const auto& tableManager = eclState->getTableManager();
-        const std::vector<SwofTable>& swofTables = tableManager->getSwofTables();
-        const std::vector<SlgofTable>& slgofTables = tableManager->getSlgofTables();
-        const std::vector<SgofTable>& sgofTables = tableManager->getSgofTables();
-        const std::vector<SwfnTable>& swfnTables = tableManager->getSwfnTables();
-        const std::vector<SgfnTable>& sgfnTables = tableManager->getSgfnTables();
-        const std::vector<Sof3Table>& sof3Tables = tableManager->getSof3Tables();
+        const TableContainer& swofTables = tableManager->getSwofTables();
+        const TableContainer& slgofTables= tableManager->getSlgofTables();
+        const TableContainer& sgofTables = tableManager->getSgofTables();
+        const TableContainer& swfnTables = tableManager->getSwfnTables();
+        const TableContainer& sgfnTables = tableManager->getSgfnTables();
+        const TableContainer& sof3Tables = tableManager->getSof3Tables();
 
         bool family1 = (!sgofTables.empty() || !slgofTables.empty()) && !swofTables.empty();
         bool family2 = !swfnTables.empty() && !sgfnTables.empty() && !sof3Tables.empty();
@@ -624,15 +624,17 @@ private:
         // handle the twophase case
         const auto& tableManager = eclState->getTableManager();
         if (!hasWater) {
-            if (!tableManager->getSgofTables().empty())
+            const TableContainer& sgofTables  = tableManager->getSgofTables();
+            const TableContainer& slgofTables = tableManager->getSlgofTables();
+            if (!sgofTables.empty())
                 readGasOilEffectiveParametersSgof_(effParams,
                                                    Swco,
-                                                   tableManager->getSgofTables()[satnumRegionIdx]);
+                                                   sgofTables.getTable<SgofTable>(satnumRegionIdx));
             else {
-                assert(!tableManager->getSlgofTables().empty());
+                assert(!slgofTables.empty());
                 readGasOilEffectiveParametersSlgof_(effParams,
                                                     Swco,
-                                                    tableManager->getSlgofTables()[satnumRegionIdx]);
+                                                    slgofTables.getTable<SlgofTable>(satnumRegionIdx));
             }
 
             // Todo (?): support for twophase simulations using family2?
@@ -650,24 +652,28 @@ private:
         switch (getSaturationFunctionFamily(eclState)) {
         case FamilyI:
         {
-            if (!tableManager->getSgofTables().empty())
+            const TableContainer& sgofTables = tableManager->getSgofTables();
+            const TableContainer& slgofTables = tableManager->getSlgofTables();
+            if (!sgofTables.empty())
                 readGasOilEffectiveParametersSgof_(effParams,
                                                    Swco,
-                                                   tableManager->getSgofTables()[satnumRegionIdx]);
-            else if (!tableManager->getSlgofTables().empty())
+                                                   sgofTables.getTable<SgofTable>(satnumRegionIdx));
+            else if (!slgofTables.empty())
                 readGasOilEffectiveParametersSlgof_(effParams,
                                                     Swco,
-                                                    tableManager->getSlgofTables()[satnumRegionIdx]);
+                                                    slgofTables.getTable<SlgofTable>(satnumRegionIdx));
 
             break;
         }
 
         case FamilyII:
         {
+            const Sof3Table& sof3Table = tableManager->getSof3Tables().getTable<Sof3Table>( satnumRegionIdx );
+            const SgfnTable& sgfnTable = tableManager->getSgfnTables().getTable<SgfnTable>( satnumRegionIdx );
             readGasOilEffectiveParametersFamily2_(effParams,
                                                   Swco,
-                                                  tableManager->getSof3Tables()[satnumRegionIdx],
-                                                  tableManager->getSgfnTables()[satnumRegionIdx]);
+                                                  sof3Table,
+                                                  sgfnTable);
             break;
         }
 
@@ -752,7 +758,7 @@ private:
             return;
         }
         else if (!hasGas) {
-            const auto& swofTable = tableManager->getSwofTables()[satnumRegionIdx];
+            const auto& swofTable = tableManager->getSwofTables().getTable<SwofTable>(satnumRegionIdx);
             const auto &SwColumn = swofTable.getSwColumn();
 
             effParams.setKrwSamples(SwColumn, swofTable.getKrwColumn());
@@ -771,7 +777,7 @@ private:
 
         switch (getSaturationFunctionFamily(eclState)) {
         case FamilyI: {
-            const auto& swofTable = tableManager->getSwofTables()[satnumRegionIdx];
+            const auto& swofTable = tableManager->getSwofTables().getTable<SwofTable>(satnumRegionIdx);
             const auto &SwColumn = swofTable.getSwColumn();
 
             effParams.setKrwSamples(SwColumn, swofTable.getKrwColumn());
@@ -782,8 +788,8 @@ private:
         }
         case FamilyII:
         {
-            const auto& swfnTable = tableManager->getSwfnTables()[satnumRegionIdx];
-            const auto& sof3Table = tableManager->getSof3Tables()[satnumRegionIdx];
+            const auto& swfnTable = tableManager->getSwfnTables().getTable<SwfnTable>(satnumRegionIdx);
+            const auto& sof3Table = tableManager->getSof3Tables().getTable<Sof3Table>(satnumRegionIdx);
             const auto &SwColumn = swfnTable.getSwColumn();
 
             // convert the saturations of the SOF3 keyword from oil to water saturations
