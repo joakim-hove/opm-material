@@ -579,7 +579,7 @@ private:
             else if (!slgofTables.empty())
                 readGasOilEffectiveParametersSlgof_(effParams,
                                                     Swco,
-                                                    tableManager->getSlgofTables()[satnumIdx]);
+                                                    slgofTables.getTable<Opm::SlgofTable>(satnumIdx));
 
             break;
         }
