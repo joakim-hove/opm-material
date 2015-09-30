@@ -40,7 +40,7 @@ list (APPEND TEST_SOURCE_FILES
 	tests/test_components.cpp
 	tests/test_fluidsystems.cpp
 	tests/test_immiscibleflash.cpp
-	)
+        tests/test_parser_tables.cpp )
 
 # originally generated with the command:
 # find tests -name '*.xml' -a ! -wholename '*/not-unit/*' -printf '\t%p\n' | sort
